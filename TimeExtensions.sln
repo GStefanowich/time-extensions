@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeExtensions", "TimeExtensions\TimeExtensions.csproj", "{B666A8E5-2CDE-4EE1-9985-28B8EE45F43A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeExtensions.Tests", "TimeExtensions.Tests\TimeExtensions.Tests.csproj", "{2396362C-51B9-43A4-A3E8-6ACEAFC9333E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{B666A8E5-2CDE-4EE1-9985-28B8EE45F43A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B666A8E5-2CDE-4EE1-9985-28B8EE45F43A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B666A8E5-2CDE-4EE1-9985-28B8EE45F43A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2396362C-51B9-43A4-A3E8-6ACEAFC9333E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2396362C-51B9-43A4-A3E8-6ACEAFC9333E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2396362C-51B9-43A4-A3E8-6ACEAFC9333E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2396362C-51B9-43A4-A3E8-6ACEAFC9333E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
