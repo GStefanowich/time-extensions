@@ -32,7 +32,7 @@ namespace TheElm.Time {
         /// <summary>Checks if the <see cref="DateTime"/> is more than <see cref="TimeSpan"/> into the past than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
         public static bool MoreThanAgo( this DateTime time, TimeSpan timeSpan, bool inclusive = true )
-            => time.AddInternal(timeSpan).CompareToNow(inclusive ? TimeComparer.LESS_THAN_EQUALS : TimeComparer.LESS_THAN);
+            => time.CompareTo(DateTime.UtcNow.SubtractInternal(timeSpan), inclusive ? TimeComparer.LESS_THAN_EQUALS : TimeComparer.LESS_THAN);
         
         /// <summary>Checks if the <see cref="DateTime"/> is less than <see cref="TimeSpan"/> into the past than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
@@ -42,7 +42,7 @@ namespace TheElm.Time {
         /// <summary>Checks if the <see cref="DateTime"/> is less than <see cref="TimeSpan"/> into the past than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
         public static bool LessThanAgo( this DateTime time, TimeSpan timeSpan, bool inclusive = true )
-            => time.SubtractInternal(timeSpan).CompareToNow(inclusive ? TimeComparer.LESS_THAN_EQUALS : TimeComparer.LESS_THAN);
+            => time.CompareTo(DateTime.UtcNow.SubtractInternal(timeSpan), inclusive ? TimeComparer.GREATER_THAN_EQUALS : TimeComparer.GREATER_THAN);
         
         /// <summary>Checks if the <see cref="DateTime"/> is more than <see cref="TimeSpan"/> into the future than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
@@ -52,7 +52,7 @@ namespace TheElm.Time {
         /// <summary>Checks if the <see cref="DateTime"/> is more than <see cref="TimeSpan"/> into the future than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
         public static bool MoreThanAhead( this DateTime time, TimeSpan timeSpan, bool inclusive = true )
-            => time.SubtractInternal(timeSpan).CompareToNow(inclusive ? TimeComparer.GREATER_THAN_EQUALS : TimeComparer.GREATER_THAN);
+            => DateTime.UtcNow.AddInternal(timeSpan).CompareTo(time, inclusive ? TimeComparer.LESS_THAN_EQUALS : TimeComparer.LESS_THAN);
         
         /// <summary>Checks if the <see cref="DateTime"/> is less than <see cref="TimeSpan"/> into the future than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
@@ -62,37 +62,7 @@ namespace TheElm.Time {
         /// <summary>Checks if the <see cref="DateTime"/> is less than <see cref="TimeSpan"/> into the future than the current system time</summary>
         /// <exception cref="ArgumentOutOfRangeException">If the <see cref="TimeSpan"/> given is fewer than 1 full second, but great than 0 seconds (Time comparison is in Seconds, so Millis and Micro are unsupported and can lead to bugs)</exception>
         public static bool LessThanAhead(this DateTime time, TimeSpan timeSpan, bool inclusive = true)
-            => !time.MoreThanAhead(timeSpan, !inclusive);
-        
-        internal static bool CompareToNow(this DateTime time, TimeComparer comparer) {
-            int result = time.RoundToSeconds()
-                .CompareTo(DateTime.UtcNow.RoundToSeconds());
-            
-            return comparer.Compare(result);
-        }
-        
-        internal static DateTime AddInternal( this DateTime time, TimeSpan timeSpan ) {
-            if (timeSpan.TotalSeconds < 1 && timeSpan.TotalMicroseconds > 0)
-                throw new ArgumentOutOfRangeException(nameof(timeSpan), $"{nameof(TimeSpan)} comparison does not support seconds > 0 and < 1");
-            
-            return time.Add(timeSpan);
-        }
-        
-        internal static DateTime SubtractInternal( this DateTime time, TimeSpan timeSpan ) {
-            if (timeSpan.TotalSeconds < 1 && timeSpan.TotalMicroseconds > 0)
-                throw new ArgumentOutOfRangeException(nameof(timeSpan), $"{nameof(TimeSpan)} comparison does not support seconds > 0 and < 1");
-            
-            return time.Subtract(timeSpan);
-        }
-        
-        #endregion
-        #region Math
-        
-        public static DateTime Add( this DateTime time, double length, TimeUnit unit = TimeUnit.Seconds )
-            => time.Add(unit.ToSpan(length));
-        
-        public static DateTime Subtract( this DateTime time, double length, TimeUnit unit = TimeUnit.Seconds )
-            => time.Subtract(unit.ToSpan(length));
+            => time.CompareTo(DateTime.UtcNow.AddInternal(timeSpan), inclusive ? TimeComparer.LESS_THAN_EQUALS : TimeComparer.LESS_THAN);
         
         #endregion
         #region Time
@@ -139,71 +109,109 @@ namespace TheElm.Time {
             => dateTime.WithNextTime(new TimeOnly(hour, minute, second, millis, micro));
         
         #endregion
-        #region Relative Times
-        
-        /// <summary>
-        /// Get the next <see cref="DayOfWeek"/> from the given <see cref="DateTimeOffset"/>
-        /// When inclusive, if the <see cref="DayOfWeek"/> is the same day as the given time, that time is returned
-        /// If the given time has passed the day of week, the next day of week is returned
-        /// If the given time has not passed the day of week, that day of week is returned
-        /// </summary>
-        /// <param name="dateTime"></param>
-        /// <param name="dayOfWeek"></param>
-        /// <param name="inclusive"></param>
-        /// <returns></returns>
-        public static DateTime WithNextDay( this DateTime dateTime, DayOfWeek dayOfWeek, bool inclusive = true ) {
-            if ( inclusive && dateTime.DayOfWeek == dayOfWeek ) {
-                return dateTime;
-            }
-            
-            int diff = (int)dayOfWeek - (int)dateTime.DayOfWeek;
-            
-            if ( diff <= 0 ) {
-                diff += 7;
-            }
-            
-            // Shift the time
-            return dateTime.AddDays(diff);
-        }
-        
-        public static DateTime WithNthNextDay( this DateTime dateTime, DayOfWeek dayOfWeek, int ahead, bool inclusive = true )
-            => dateTime.WithNextDay(dayOfWeek, inclusive)
-                .AddDays(7 * ((int)dayOfWeek - (int)dateTime.DayOfWeek <= 0 ? ahead - 1 : ahead));
-        
-        #endregion
-        #region TimeZones
-        
-        public static DateTimeOffset InZone( this DateTime dateTime, TimeZoneInfo info )
-            => new(dateTime.Ticks, info.BaseUtcOffset);
-        
-        public static DateTimeOffset InZone( this DateTime dateTime, string name )
-            => dateTime.InZone(TimeZoneInfo.FindSystemTimeZoneById(name));
-        
-        #endregion
-        
-        private static DateTime RoundToSeconds( this DateTime time )
-            => new(
-                year: time.Year,
-                month: time.Month,
-                day: time.Day,
-                hour: time.Hour,
-                minute: time.Minute,
-                second: time.Second,
-                millisecond: 0,
-                microsecond: 0,
-                time.Kind
-            );
         
         /// <summary>Calculate the difference of <paramref name="unit"/>s between two Times</summary>
         public static double Difference( this DateTime first, DateTime second, TimeUnit unit )
             => (first - second).Total(unit);
         
-        /// <summary>Convert the <see cref="DateTime"/> into a Unix Timestamp</summary>
-        public static long AsUnixTimestamp( this DateTime time )
-            => (long)(time - DateTime.UnixEpoch).TotalSeconds;
-        
-        /// <summary>Convert the <see cref="DateTimeOffset"/> into an ISO-8601 Timestamp</summary>
-        public static string ToISO8601( this DateTime time, int decimals = 3 )
-            => time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{new string('f', decimals)}K", CultureInfo.InvariantCulture);
+        extension ( DateTime time ) {
+            private DateTime RoundToSeconds()
+                => new(
+                    year: time.Year,
+                    month: time.Month,
+                    day: time.Day,
+                    hour: time.Hour,
+                    minute: time.Minute,
+                    second: time.Second,
+                    millisecond: 0,
+                    microsecond: 0,
+                    time.Kind
+                );
+            
+            #region Internals
+            
+            internal bool CompareToNow( TimeComparer comparer )
+                => time.CompareTo(DateTime.UtcNow, comparer);
+            
+            internal bool CompareTo( DateTime other, TimeComparer comparer ) {
+                int result = time.RoundToSeconds()
+                    .CompareTo(other.RoundToSeconds());
+                
+                return comparer.Compare(result);
+            }
+            
+            internal DateTime AddInternal( TimeSpan timeSpan ) {
+                if (timeSpan.TotalSeconds < 1 && timeSpan.TotalMicroseconds > 0)
+                    throw new ArgumentOutOfRangeException(nameof(timeSpan), $"{nameof(TimeSpan)} comparison does not support seconds > 0 and < 1");
+                
+                return time.Add(timeSpan);
+            }
+            
+            internal DateTime SubtractInternal( TimeSpan timeSpan ) {
+                if (timeSpan.TotalSeconds < 1 && timeSpan.TotalMicroseconds > 0)
+                    throw new ArgumentOutOfRangeException(nameof(timeSpan), $"{nameof(TimeSpan)} comparison does not support seconds > 0 and < 1");
+                
+                return time.Subtract(timeSpan);
+            }
+            
+            #endregion
+            #region Math
+            
+            public DateTime Add( double length, TimeUnit unit = TimeUnit.Seconds )
+                => time.Add(unit.ToSpan(length));
+            
+            public DateTime Subtract( double length, TimeUnit unit = TimeUnit.Seconds )
+                => time.Subtract(unit.ToSpan(length));
+            
+            #endregion
+            #region Relative Times
+            
+            /// <summary>
+            /// Get the next <see cref="DayOfWeek"/> from the given <see cref="DateTimeOffset"/>
+            /// When inclusive, if the <see cref="DayOfWeek"/> is the same day as the given time, that time is returned
+            /// If the given time has passed the day of week, the next day of week is returned
+            /// If the given time has not passed the day of week, that day of week is returned
+            /// </summary>
+            /// <param name="dayOfWeek"></param>
+            /// <param name="inclusive"></param>
+            /// <returns></returns>
+            public DateTime WithNextDay( DayOfWeek dayOfWeek, bool inclusive = true ) {
+                if ( inclusive && time.DayOfWeek == dayOfWeek ) {
+                    return time;
+                }
+                
+                int diff = (int)dayOfWeek - (int)time.DayOfWeek;
+                
+                if ( diff <= 0 ) {
+                    diff += 7;
+                }
+                
+                // Shift the time
+                return time.AddDays(diff);
+            }
+            
+            public DateTime WithNthNextDay( DayOfWeek dayOfWeek, int ahead, bool inclusive = true )
+                => time.WithNextDay(dayOfWeek, inclusive)
+                    .AddDays(7 * ((int)dayOfWeek - (int)time.DayOfWeek <= 0 ? ahead - 1 : ahead));
+            
+            #endregion
+            #region TimeZones
+            
+            public DateTimeOffset InZone( TimeZoneInfo info )
+                => new(time.Ticks, info.BaseUtcOffset);
+            
+            public DateTimeOffset InZone( string name )
+                => time.InZone(TimeZoneInfo.FindSystemTimeZoneById(name));
+            
+            #endregion
+            
+            /// <summary>Convert the <see cref="DateTime"/> into a Unix Timestamp</summary>
+            public long AsUnixTimestamp()
+                => (long)(time - DateTime.UnixEpoch).TotalSeconds;
+            
+            /// <summary>Convert the <see cref="DateTimeOffset"/> into an ISO-8601 Timestamp</summary>
+            public string ToISO8601( int decimals = 3 )
+                => time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{new string('f', decimals)}K", CultureInfo.InvariantCulture);
+        }
     }
 }
